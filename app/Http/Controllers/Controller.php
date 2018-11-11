@@ -11,9 +11,9 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    const CODE_FAIL = 0;
-    const CODE_SUCCESS = 1;
-    public function resultSuccess($data, $messages = [])
+    const CODE_FAIL = false;
+    const CODE_SUCCESS = true;
+    public function resultSuccess($data = [], $messages = [])
     {
         return [
             'code'=>self::CODE_SUCCESS,

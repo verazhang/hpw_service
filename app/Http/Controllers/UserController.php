@@ -5,8 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Auth;
 use App\User;
+use App\WorkerSalary;
+use App\Settings;
+use App\Income;
+use App\Pay;
 use Illuminate\Support\Facades\Hash;
 use Validator;
+use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -72,12 +78,93 @@ class UserController extends Controller
         Auth::logout();
     }
 
-    public function test(Request $request)
+    /**
+     * 为工人记录工资，扣除饭费，预支工资
+     * @param Request $request
+     * @return array
+     */
+    public function addSalary(Request $request)
     {
-        $user = Auth::guard('api')->user();
-        var_dump($user->email);
-        exit;
-        $name = $request->input("name");
-        return "abc || " . $name;
+        $data = $request->all();
+        $validator = Validator::make($data, [
+            "worker_id" => "required",
+            "cash" => "required|numeric",
+            "meals" => "numeric",
+            "type" => Rule::in(WorkerSalary::TYPES),
+        ]);
+        if ($validator->fails()) {
+            return $this->resultFail($validator->errors());
+        }
+        extract($data);
+
+        $record_at = $record_at ?? Carbon::now();
+
+        if ($type  == WorkerSalary::TYPE_ADVANCE) {
+            $cash = -1 * $cash;
+        }
+
+        $user_id = Auth::id();
+        //扣除生活费
+        if (isset($meals) && $meals) {
+            $ws = WorkerSalary::create([
+                "user_id" => $user_id,
+                "worker_id" => $worker_id,
+                "record_at" => $record_at,
+                "cash" => -1 * $meals,
+                "type" => WorkerSalary::TYPE_MEALS,
+            ]);
+            if (!$ws) {
+                return $this->resultFail("Add meals fee failed");
+            }
+        }
+
+        WorkerSalary::create([
+            "user_id" => $user_id,
+            "worker_id" => $worker_id,
+            "record_at" => $record_at,
+            "cash" => $cash,
+            "type" => $type,
+        ]);
+
+        return $this->resultSuccess();
+    }
+
+    /**
+     * 拨款
+     */
+    public function allocateFund(Request $request)
+    {
+        $data = $request->all();
+        $validator = Validator::make($data, [
+            "cash" => "required"
+        ]);
+        if ($validator->fails()) {
+            return $this->resultFail($validator->errors());
+        }
+        return $this->resultSuccess(
+            Income::create([
+                "cash" => $data["cash"],
+                "user_id" => Auth::id(),
+            ])
+        );
+    }
+    /**
+     * 发工资
+     */
+    public function payCash(Request $request)
+    {
+        $data = $request->all();
+        $validator = Validator::make($data, [
+            "cash" => "required",
+            "worker_id" => "required",
+        ]);
+        if ($validator->fails()) {
+            return $this->resultFail($validator->errors());
+        }
+        return $this->resultSuccess(Pay::create([
+            "cash" => $data["cash"],
+            "worker_id" => $data["worker_id"],
+            "user_id" => Auth::id(),
+        ]));
     }
 }
