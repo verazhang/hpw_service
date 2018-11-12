@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Validator;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
+use Redis;
 
 class UserController extends Controller
 {
@@ -34,6 +35,11 @@ class UserController extends Controller
         $name = $data['name'] ?? "";
         $password = $data['password'] ?? "";
         if (Auth::attempt(['name' => $name, 'password' => $password])) {
+//            $this->session->put($this->getName(), $id);
+//            $request->session()->put('user:profile', $name." ses ".$password);
+//            Redis::set('user:profile', $name." ".$password);
+            $user = Auth::guard()->user();
+            $user->generateToken();
             return $this->resultSuccess(Auth::user());
         }
         return $this->resultFail("用户名或密码不正确");
@@ -50,7 +56,7 @@ class UserController extends Controller
             'name.required' => '请输入用户名',
             'name.unique' => '用户名已存在，请输入其他名字',
             'password.required' => '请输入密码',
-            'password.confirmed' => '确认密码和原密码不一致',
+//            'password.confirmed' => '确认密码和原密码不一致',
             'email.required' => '请输入邮箱地址',
             'email.unique' => '邮箱地址已存在，请输入真实邮箱，之后用以找回密码',
         ];
@@ -67,15 +73,25 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'phone' => $data['phone'],
         ]);
         Auth::login($user);
+        $user->generateToken();
 
-        return $this->resultSuccess(Auth::user());
+        return $this->resultSuccess($user);
     }
 
     public function logout()
     {
         Auth::logout();
+    }
+
+    public function get()
+    {
+        $user = Auth::user();
+        $fee = Settings::getSettings(Settings::KEY_MEALS);
+        $user->meals_fee = $fee;
+        return $this->resultSuccess($user);
     }
 
     /**

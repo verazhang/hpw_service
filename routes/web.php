@@ -15,25 +15,35 @@
 //Auth::routes();
 //
 //Route::get('/home', 'HomeController@index')->name('home');
+//所有页面检查访问check
+Route::get("/check", function(){
+    return "Unauthorized";
+})->name('check');
 
 //用户
-Route::middleware('auth:api')->post('/user/login', 'UserController@login');
+Route::post('/user/login', 'UserController@login');
 Route::post('/user/register', 'UserController@register');
-Route::post('/user/salary', 'UserController@addSalary');
-Route::post('/user/fund', 'UserController@allocateFund');
-Route::post('/user/pay', 'UserController@payCash');
-//工人
-Route::post('/worker/register', 'WorkerController@register');
-Route::get('/worker/get/{id}', 'WorkerController@get');
-Route::get('/worker/searchdown/{name?}', 'WorkerController@searchSimple');
-Route::get('/worker/search', 'WorkerController@search');
+
+Route::group(['middleware'=>'auth:api'], function(){
+    Route::get('/user/get', 'UserController@get');
+    Route::post('/user/salary', 'UserController@addSalary');
+    Route::post('/user/fund', 'UserController@allocateFund');
+    Route::post('/user/pay', 'UserController@payCash');
+    //工人
+    Route::post('/worker/register', 'WorkerController@register');
+    Route::get('/worker/get/{id}', 'WorkerController@get');
+    Route::get('/worker/searchdown/{name?}', 'WorkerController@searchSimple');
+    Route::get('/worker/search', 'WorkerController@search');
 
 //统计报表
-Route::get('/report/worker/list', 'ReportController@wokerList');
-Route::get('/report/worker/contact/{worker_id}', 'ReportController@workerContact');
 
+    Route::get('/report/worker/list', 'ReportController@wokerList');
+    Route::get('/report/worker/contact/{worker_id}', 'ReportController@workerContact');
+    Route::get('/report/user/contact', 'ReportController@userContact');
+});
 
 //公共配置
 Route::get('/settings/{key}', 'SettingsController@get');
+Route::post('/settings/update/{key}', 'SettingsController@update');
 
 

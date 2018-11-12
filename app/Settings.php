@@ -14,4 +14,10 @@ class Settings extends Model
     protected $fillable = [
         "key", "value"
     ];
+
+    protected function getSettings($key)
+    {
+        $fee = $this->where("key", $key)->first();
+        return $fee ? $fee->value : 0;
+    }
 }

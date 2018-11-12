@@ -11,18 +11,21 @@ use App\Worker;
 
 class ReportController extends Controller
 {
+    //登录用户ID
+    protected $uid;
+    public function __construct()
+    {
+        $this->uid = Auth::guard("api")->id();
+    }
+
     /**
      * 用户收支情况
      * @return array
      */
-    public function userContact()
+    public function userContact(Request $request)
     {
-        $user_id = Auth::id();
-
-        return $this->resultSuccess($user_id,Auth::guard('api')->user());
-
-        $totalIn = Income::where("user_id", $user_id)->sum("cash");
-        $totalPay = Pay::where("user_id", $user_id)->sum("cash");
+        $totalIn = Income::where("user_id", $this->uid)->sum("cash");
+        $totalPay = Pay::where("user_id", $this->uid)->sum("cash");
         $balance = $totalIn - $totalPay;
         return $this->resultSuccess(compact("totalIn", "totalPay", "balance"));
     }

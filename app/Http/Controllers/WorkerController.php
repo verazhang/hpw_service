@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings;
 use Illuminate\Http\Request;
 use Auth;
 use App\Worker;
 use Validator;
+use Overtrue\Pinyin\Pinyin;
 
 class WorkerController extends Controller
 {
     const DROPDOWN_MAX = 10;
     const LIST_MAX = 20;
-    protected $user_id;
+    protected $uid;
     public function __construct()
     {
-        $this->user_id = Auth::id();
+        $this->uid = Auth::id();
     }
 
     public function register(Request $request)
@@ -36,7 +38,7 @@ class WorkerController extends Controller
             return $this->resultFail($validator->errors());
         }
         $data['salary'] = $data['salary'] ?? 0.00;
-        $data["user_id"] = Auth::id();
+        $data["user_id"] = $this->uid;
         $worker = Worker::create($data);
 
         return $this->resultSuccess($worker);
@@ -58,13 +60,27 @@ class WorkerController extends Controller
         return $this->resultSuccess($data);
     }
 
-    public function search($name = "")
+    public function search(Request $request)
     {
+        $name = $request->input("name", "");
+//        $pinyin = new Pinyin();
+//        $res = $pinyin->name('单田芳');
+//        $res = $pinyin->abbr(implode(" ", $res), PINYIN_KEEP_ENGLISH);
+////        $res = $pinyin->name('鞠婧祎');
+//        return $res;
+        $uid = Auth::id();
+        $model = Worker::where("user_id", $uid);
         if ($name) {
-            $data = Worker::where("user_id", $this->user_id)->where("name", "like", $name."%")->orderBy("name", "asc")->get();
+            $data = $model->where("name", "like", $name."%")->orderBy("name", "asc")->get(["id", "name", "salary"]);
             return $this->resultSuccess($data);
         }
-        $data = Worker::orderBy("name", "asc")->pluck("name", "id");
-        return $this->resultSuccess($data);
+        $data = $model->orderBy("name", "asc")->get(["id", "name", "salary"]);//->pluck("name", "id");
+        $fee = Settings::getSettings(Settings::KEY_MEALS);
+        return $this->resultSuccess(['workers'=>$data, 'meals_fee'=>$fee]);
     }
+
+//    public function updateCache()
+//    {
+//
+//    }
 }
