@@ -11,31 +11,28 @@ use App\Worker;
 
 class ReportController extends Controller
 {
-    //登录用户ID
-    protected $uid;
-    public function __construct()
-    {
-        $this->uid = Auth::guard("api")->id();
-    }
-
     /**
      * 用户收支情况
      * @return array
      */
     public function userContact(Request $request)
     {
-        $totalIn = Income::where("user_id", $this->uid)->sum("cash");
-        $totalPay = Pay::where("user_id", $this->uid)->sum("cash");
+        $uid = Auth::id();
+        $totalIn = Income::where("user_id", $uid)->sum("cash");
+        $totalPay = Pay::where("user_id", $uid)->sum("cash");
         $balance = $totalIn - $totalPay;
         return $this->resultSuccess(compact("totalIn", "totalPay", "balance"));
     }
 
     public function wokerList()
     {
+        $uid = Auth::id();
         //total salary
         $result = Worker::selectRaw("worker.*, ifnull(sum(cash),0) as total")
             ->leftJoin("worker_salary", "worker.id", "=", "worker_salary.worker_id")
+            ->where("worker.user_id", $uid)
             ->groupBy("worker.id")
+            ->groupBy("worker.name")
             ->orderBy("name", "asc")
             ->get();
         return $this->resultSuccess($result);

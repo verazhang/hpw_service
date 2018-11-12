@@ -13,11 +13,6 @@ class WorkerController extends Controller
 {
     const DROPDOWN_MAX = 10;
     const LIST_MAX = 20;
-    protected $uid;
-    public function __construct()
-    {
-        $this->uid = Auth::id();
-    }
 
     public function register(Request $request)
     {
@@ -38,7 +33,7 @@ class WorkerController extends Controller
             return $this->resultFail($validator->errors());
         }
         $data['salary'] = $data['salary'] ?? 0.00;
-        $data["user_id"] = $this->uid;
+        $data["user_id"] = Auth::id();
         $worker = Worker::create($data);
 
         return $this->resultSuccess($worker);
@@ -63,11 +58,7 @@ class WorkerController extends Controller
     public function search(Request $request)
     {
         $name = $request->input("name", "");
-//        $pinyin = new Pinyin();
-//        $res = $pinyin->name('单田芳');
-//        $res = $pinyin->abbr(implode(" ", $res), PINYIN_KEEP_ENGLISH);
-////        $res = $pinyin->name('鞠婧祎');
-//        return $res;
+
         $uid = Auth::id();
         $model = Worker::where("user_id", $uid);
         if ($name) {
@@ -78,9 +69,4 @@ class WorkerController extends Controller
         $fee = Settings::getSettings(Settings::KEY_MEALS);
         return $this->resultSuccess(['workers'=>$data, 'meals_fee'=>$fee]);
     }
-
-//    public function updateCache()
-//    {
-//
-//    }
 }
