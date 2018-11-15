@@ -35,9 +35,6 @@ class UserController extends Controller
         $name = $data['name'] ?? "";
         $password = $data['password'] ?? "";
         if (Auth::attempt(['name' => $name, 'password' => $password])) {
-//            $this->session->put($this->getName(), $id);
-//            $request->session()->put('user:profile', $name." ses ".$password);
-//            Redis::set('user:profile', $name." ".$password);
             $user = Auth::guard()->user();
             $user->generateToken();
             return $this->resultSuccess(Auth::user());
@@ -115,10 +112,6 @@ class UserController extends Controller
 
         $record_at = $record_at ?? Carbon::now();
 
-        if ($type  == WorkerSalary::TYPE_ADVANCE) {
-            $cash = -1 * $cash;
-        }
-
         $user_id = Auth::id();
         //扣除生活费
         if (isset($meals) && $meals) {
@@ -134,6 +127,16 @@ class UserController extends Controller
             }
         }
 
+        //支付记录
+        Pay::create([
+            "cash" => $cash,
+            "worker_id" => $worker_id,
+            "user_id" => $user_id,
+        ]);
+
+        if (in_array($type, [WorkerSalary::TYPE_ADVANCE, WorkerSalary::TYPE_PAID])) {
+            $cash = -1 * $cash;
+        }
         WorkerSalary::create([
             "user_id" => $user_id,
             "worker_id" => $worker_id,

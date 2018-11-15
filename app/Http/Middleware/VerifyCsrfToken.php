@@ -26,6 +26,7 @@ class VerifyCsrfToken extends Middleware
         "/user/pay",
         "/user/salary",
         "/worker/register",
+//        "/worker/search",
         "/user/get",
         "/settings/update*",
     ];

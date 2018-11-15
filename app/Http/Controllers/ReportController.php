@@ -11,6 +11,7 @@ use App\Worker;
 
 class ReportController extends Controller
 {
+    const LIST_MAX = 5;
     /**
      * 用户收支情况
      * @return array
@@ -28,11 +29,24 @@ class ReportController extends Controller
     {
         $uid = Auth::id();
         //total salary
-        $result = Worker::selectRaw("worker.*, ifnull(sum(cash),0) as total")
-            ->leftJoin("worker_salary", "worker.id", "=", "worker_salary.worker_id")
-            ->where("worker.user_id", $uid)
+//        $result = Worker::selectRaw("worker.*, ifnull(sum(worker_salary.cash),0) as total, (select ifnull(sum(pay.cash), 0) from pay where pay.user_id=".$uid." and pay.worker_id=worker.id) totalpaid")
+//            ->leftJoin("worker_salary", function($join) use ($uid) {
+//                $join->on('worker.id','=','worker_salary.worker_id')
+//                    ->where('worker.user_id', $uid)
+//                    ->where('worker_salary.user_id', $uid);
+//            })
+//            ->groupBy("worker.id")
+////            ->groupBy("worker.name")
+//            ->orderBy("name", "asc")
+//            ->get();
+        $result = Worker::selectRaw("worker.*, ifnull(sum(worker_salary.cash),0) as total")
+            ->leftJoin("worker_salary", function($join) use ($uid) {
+                $join->on('worker.id','=','worker_salary.worker_id')
+                    ->where('worker.user_id', $uid)
+                    ->where('worker_salary.user_id', $uid);
+            })
             ->groupBy("worker.id")
-            ->groupBy("worker.name")
+//            ->groupBy("worker.name")
             ->orderBy("name", "asc")
             ->get();
         return $this->resultSuccess($result);
@@ -45,10 +59,39 @@ class ReportController extends Controller
      */
     public function workerContact($worker_id)
     {
+        $uid = Auth::id();
         $wsalary = WorkerSalary::selectRaw("type, ifnull(sum(cash), 0) total")
             ->where("worker_id", $worker_id)
+            ->where("user_id", $uid)
             ->groupBy("type")
             ->get();
         return $this->resultSuccess($wsalary);
+    }
+
+    public function fundList(Request $request)
+    {
+        $page = $request->input('page', 0);
+        $size = $request->input('size', self::LIST_MAX);
+        $uid = Auth::id();
+        $data = Income::where("user_id", $uid)
+            ->offset($page*$size)->limit($size)
+            ->get();
+        return $this->resultSuccess($data);
+    }
+
+    public function payList(Request $request)
+    {
+        $page = $request->input('page', 0);
+        $size = $request->input('size', self::LIST_MAX);
+        $uid = Auth::id();
+        $data = Worker::selectRaw("worker.*, worker_salary.cash")
+            ->join("worker_salary", "worker.id", "=", "worker_salary.worker_id")
+//        WorkerSalary::where("user_id", $uid)
+            ->where("type", WorkerSalary::TYPE_PAID)
+            ->where("worker.user_id", $uid)
+            ->where("worker_salary.user_id", $uid)
+            ->offset($page*$size)->limit($size)
+            ->get();
+        return $this->resultSuccess($data);
     }
 }
