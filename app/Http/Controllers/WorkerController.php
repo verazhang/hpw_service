@@ -15,8 +15,6 @@ class WorkerController extends Controller
 {
     const DROPDOWN_MAX = 10;
     const LIST_MAX = 5;
-    const WORKER_CACHE_KEY = "workercache";
-
 
     public function register(Request $request)
     {
@@ -63,12 +61,13 @@ class WorkerController extends Controller
     {
         $keywords = $request->input("k", "");
 
-        //输入的是名称首字母
-        if (!preg_match('/^[0-9A-Za-z]+$/', $keywords)) {
-            $pinyin = new Pinyin();
-            $res = $pinyin->name($keywords, PINYIN_KEEP_NUMBER_AND_ENGLISH);
-            $keywords = $pinyin->abbr(implode(" ", $res), PINYIN_KEEP_NUMBER_AND_ENGLISH);
-        }
+        //输入非简写，即汉字，转换为首字母再搜索
+//        if (!preg_match('/^[0-9A-Za-z]+$/', $keywords)) {
+//            $pinyin = new Pinyin();
+//            $res = $pinyin->name($keywords, PINYIN_KEEP_NUMBER_AND_ENGLISH);
+//            $keywords = $pinyin->abbr(implode(" ", $res), PINYIN_KEEP_NUMBER_AND_ENGLISH);
+//        }
+        $keywords = Worker::strToPinYin($keywords);
 //        dd($keywords);
         $uid = Auth::id();
 
@@ -93,18 +92,25 @@ class WorkerController extends Controller
 
     public function storeWorker(Request $request)
     {
+//        Redis::del("workercache");
+//        exit;
         $pinyin = new Pinyin();
-        $key = self::WORKER_CACHE_KEY;
+        $key = Worker::CACHE_HASH_KEY;
         Redis::del($key);
+        Redis::del(Worker::CACHE_SORTED_KEY);
         $count = Worker::count();
         $limit = 50;
         for($i = 0; $i < $count; $i++) {
             $data = Worker::offset($i*$limit)->limit($limit)->get();
             foreach ($data as $w) {
+                $totalSalary = $w->salaries()->where("user_id", $w->user_id)->sum("cash");
+                $w->total_salary = $totalSalary;
                 $res = $pinyin->name($w->name, PINYIN_KEEP_NUMBER_AND_ENGLISH);
                 $namePinyin = $pinyin->abbr(implode(" ", $res), PINYIN_KEEP_NUMBER_AND_ENGLISH);
+                $hashKey = $w->user_id."|".$namePinyin."|".$w->id;
                 // HSET KEY_NAME FIELD VALUE
-                Redis::hset($key, $w->user_id."|".$namePinyin, json_encode($w->getAttributes()));
+                Redis::hset($key, $hashKey, $w->toJson());
+                Redis::zadd(Worker::CACHE_SORTED_KEY, 0, $hashKey);
             }
             $i += $limit;
         }
@@ -119,7 +125,7 @@ class WorkerController extends Controller
     protected function searchByCache($uid, $keywords = "")
     {
         //HSCAN key cursor [MATCH pattern] [COUNT count]
-        $res = Redis::command('hscan', [self::WORKER_CACHE_KEY, 0, 'match', $uid."|".$keywords.'*', 'count', 10]);
+        $res = Redis::command('hscan', [Worker::CACHE_HASH_KEY, 0, 'match', $uid."|".$keywords.'*', 'count', self::DROPDOWN_MAX]);
         $data = [];
         if (!$res) {
             return [];

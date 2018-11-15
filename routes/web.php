@@ -48,7 +48,8 @@ Route::group(['middleware'=>'auth:api'], function(){
     Route::get('/worker/salarylist/{worker_id}', 'WorkerController@salaryList');
 
     //统计报表
-    Route::get('/report/worker/list', 'ReportController@wokerList');
+//    Route::get('/report/worker/list', 'ReportController@wokerList');
+    Route::get('/report/worker/list', 'ReportController@searchWorkerList');
 
     Route::get('/report/worker/contact/{worker_id}', 'ReportController@workerContact');
     Route::get('/report/user/contact', 'ReportController@userContact');
