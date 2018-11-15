@@ -29,7 +29,7 @@ class ReportController extends Controller
     {
         $uid = Auth::id();
         //total salary
-        $result = Worker::selectRaw("worker.id, worker.name, worker.phone, ifnull(sum(worker_salary.cash),0) as total")
+        $result = Worker::selectRaw("worker.id, worker.name, worker.phone, worker.salary ifnull(sum(worker_salary.cash),0) as total")
             ->leftJoin("worker_salary", function($join) use ($uid) {
                 $join->on('worker.id','=','worker_salary.worker_id')
                     ->where('worker.user_id', $uid)
@@ -38,6 +38,7 @@ class ReportController extends Controller
             ->groupBy("worker.id")
             ->groupBy("worker.name")
             ->groupBy("worker.phone")
+            ->groupBy("worker.salary")
             ->orderBy("name", "asc")
             ->get();
         return $this->resultSuccess($result);
