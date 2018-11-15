@@ -15,6 +15,10 @@
 //Auth::routes();
 //
 //Route::get('/home', 'HomeController@index')->name('home');
+
+Route::get('/', function (){
+    echo 'welcome laravel';
+});
 //所有页面检查访问check
 Route::get("/check", function(){
     return [
