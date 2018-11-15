@@ -8,6 +8,6 @@ class Worker extends Model
 {
     protected $table = 'worker';
     protected $fillable = [
-        'name', 'phone', 'salary', 'started_at', 'ended_at', 'avatar'
+        'name', 'phone', 'salary', 'user_id', 'started_at', 'ended_at', 'avatar'
     ];
 }
