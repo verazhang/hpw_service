@@ -93,21 +93,6 @@ class WorkerController extends Controller
 
     public function storeWorker(Request $request)
     {
-//        $username='脚本之家jb51.net@#……^&*';
-//        $name = $request->input("k", "");
-//        $preg='/[0-9A-Za-z]+/';
-////$preg='/[\x80-\xff_\w]+/u';
-//        $arr = [];
-//        preg_match($preg,$name,$arr);
-////        dd($name, $arr);
-//
-////        $name = $request->input("k", "");
-//        $pinyin = new Pinyin();
-//        $res = $pinyin->name($name, PINYIN_KEEP_NUMBER_AND_ENGLISH);
-////        dd(implode(" ", $res));exit;
-//        $namePinyin = $pinyin->abbr(implode(" ", $res), PINYIN_KEEP_NUMBER_AND_ENGLISH);
-//        dd ($namePinyin);
-//exit;
         $pinyin = new Pinyin();
         $key = self::WORKER_CACHE_KEY;
         Redis::del($key);
